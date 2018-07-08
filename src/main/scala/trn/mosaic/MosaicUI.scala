@@ -18,14 +18,6 @@ object MosaicUI {
   var lastDirectory: Option[String] = None
 
 
-
-  val openPieceLayout: Action = new Action("Open Piece Layout"){
-    override def apply(): Unit = {
-      println("open piece layout")
-    }
-  }
-
-
   val quitAction: Action = new Action("Exit"){
     override def apply(): Unit = { System.exit(0) }
   }
@@ -66,7 +58,7 @@ class MosaicUI extends MainFrame {
           controller.openPicture(MosaicUI.this)()
         }
       })
-      contents += new MenuItem(MosaicUI.openPieceLayout)
+      contents += new MenuItem(controller.openPieceLayout)
       contents += new MenuItem(controller.savePieceLayout)
       contents += new MenuItem(MosaicUI.exportInstructionsAction)
       contents += new MenuItem(MosaicUI.quitAction)

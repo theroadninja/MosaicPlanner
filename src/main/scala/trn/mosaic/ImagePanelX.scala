@@ -60,9 +60,16 @@ class ImagePanelX() extends Panel {
     */
   var currentFirstClick: Option[Point] = None
 
+  //TODO: make private ...?
   var plates: Seq[Plate] = Seq()  // TODO: do all this more intelligently?
+    // TODO:  track if modified since save
 
 
+
+  def setPlates(p: Seq[Plate]): Unit = {
+    plates = p
+    refresh()
+  }
 
   def setParent(p: Panel): Unit ={
     parent = p
