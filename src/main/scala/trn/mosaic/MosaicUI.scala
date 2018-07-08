@@ -190,8 +190,8 @@ class MosaicUI extends MainFrame {
     val pointingAt = s"(${mouseSrcPixel.x}, ${mouseSrcPixel.y})"
     plateSizeLabel.text = mainImage.currentFirstClick match {
       case Some(p: Point) => {
-        val w = Math.abs(mouseSrcPixel.x - p.x)
-        val h = Math.abs(mouseSrcPixel.y - p.y)
+        val w = Math.abs(mouseSrcPixel.x - p.x) + 1
+        val h = Math.abs(mouseSrcPixel.y - p.y) + 1
         s"${pointingAt} Plate size: ${w}, ${h}"
       }
       case _ => pointingAt

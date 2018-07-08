@@ -274,9 +274,18 @@ class ImagePanelX() extends Panel {
         val w = p.w * s
         val h = p.h * s
         g.setColor(Color.white)
-        g.drawRect(x1, y1, p.w * s, p.h * s)
-        g.setColor(Color.black)
-        g.drawRect(x1 + 1, y1 + 1, s - 2, s - 2)
+        g.drawRect(x1, y1, w, h)
+
+        val innerColor: Color = new Color(100, 0, 50)
+        g.setColor(innerColor)
+        g.drawRect(x1 + 1, y1 + 1, w - 2, h - 2)
+
+        g.setColor(new Color(127, 127, 127, 50))
+        g.fillRect(x1 + 2, y1 + 2, w - 4, h - 4)
+
+        //diagonal line
+        g.setColor(new Color(innerColor.getRed, innerColor.getGreen, innerColor.getBlue, 100))
+        g.drawLine(x1 + 2, y1 + 2, x1 + 2 + w - 4, y1 + 2 + h - 4)
 
       }
     }
