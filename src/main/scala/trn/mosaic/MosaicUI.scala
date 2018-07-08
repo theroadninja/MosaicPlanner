@@ -17,36 +17,7 @@ object MosaicUI {
 
   var lastDirectory: Option[String] = None
 
-  def openPicture(ui: MosaicUI)(): Unit = {
 
-    //TODO:  if a picture is already open, check for unsaved layout first ...
-
-    println("open picture")
-    val chooser = new JFileChooser()
-    //chooser.setCurrentDirectory(new java.io.File("."))  // TODO: remember last folder?
-    chooser.setCurrentDirectory(new java.io.File(lastDirectory.getOrElse(("."))))
-    chooser.setDialogTitle("Open Picture File")
-    chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
-    chooser.setAcceptAllFileFilterUsed(true)
-    chooser.addChoosableFileFilter(new FileNameExtensionFilter("Supported Image Files", "png", "jpg", "gif"))  // TODO: support more image files
-    if(chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-      lastDirectory = Some(chooser.getCurrentDirectory.toString)
-      //println("directory: " + chooser.getCurrentDirectory)
-      //note:  the selected file has the full path!
-      val selectedFile = chooser.getSelectedFile
-      println("file: " + selectedFile)
-
-      //TODO: this should be in a background thread!
-      //var img:BufferedImage = null
-      //try {
-      //  img = javax.imageio.ImageIO.read()
-      //}
-
-      //NOTE: http://otfried.org/scala/image.html
-      val img:BufferedImage = ImageIO.read(selectedFile)
-      ui.setImage(img)
-    }
-  }
 
   val openPieceLayout: Action = new Action("Open Piece Layout"){
     override def apply(): Unit = {
@@ -54,14 +25,16 @@ object MosaicUI {
     }
   }
 
-  val savePieceLayout: Action = new Action("Save Piece Layout"){
-    override def apply(): Unit = {
-      println("save piece layout")
-    }
-  }
 
   val quitAction: Action = new Action("Exit"){
     override def apply(): Unit = { System.exit(0) }
+  }
+
+  val exportInstructionsAction = new Action("Export Instructions"){
+    override def apply(): Unit = {
+      // save dialog, write instructions to PNG files in sections of 32
+      // TODO
+    }
   }
 
   def makeButton(label: String, listener: PartialFunction[Event, Unit]): Button = {
@@ -76,6 +49,8 @@ object MosaicUI {
 class MosaicUI extends MainFrame {
   title = "Mosaic App"
   preferredSize = new Dimension(800,600)
+
+  val controller = new MosaicUIController(this)
   // contents = new Label("Legos!")
 
   menuBar = new MenuBar {
@@ -88,11 +63,12 @@ class MosaicUI extends MainFrame {
       //})
       contents += new MenuItem(new Action("Open Picture"){
         override def apply(): Unit = {
-          MosaicUI.openPicture(MosaicUI.this)()
+          controller.openPicture(MosaicUI.this)()
         }
       })
       contents += new MenuItem(MosaicUI.openPieceLayout)
-      contents += new MenuItem(MosaicUI.savePieceLayout)
+      contents += new MenuItem(controller.savePieceLayout)
+      contents += new MenuItem(MosaicUI.exportInstructionsAction)
       contents += new MenuItem(MosaicUI.quitAction)
 
 

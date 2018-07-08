@@ -268,7 +268,6 @@ class ImagePanelX() extends Panel {
       if(p.isCorner){
         // TODO
       } else {
-        println("ATTEMPTING TO DRAW PLATE")
         val x1 = p.x * s
         val y1 = p.y * s
         val w = p.w * s
