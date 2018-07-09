@@ -13,7 +13,7 @@ import org.json4s.jackson.Serialization.read
 import org.json4s.jackson.Serialization._
 
 import scala.swing.Dialog.{Message, Options}
-import scala.swing.{Action, Dialog}
+import scala.swing.{Action, Dialog, Point}
 
 class MosaicUIController(ui: MosaicUI) {
 
@@ -45,14 +45,47 @@ class MosaicUIController(ui: MosaicUI) {
       val selectedFile = fileController.showSaveLayoutDialog()
       selectedFile.foreach { outfile =>
         implicit val formats = Serialization.formats(NoTypeHints)
-        val plates = ui.mainImage.plates
-        val layout = LayoutFile(plates)
+        //val plates = ui.mainImage.plates
+        //val layout = LayoutFile(plates)
+        val layout = ui.mainImage.plateModel.getLayoutFile()
         Util.using(new PrintWriter(outfile)) { pw =>
           pw.write(write(layout))
         }
       } // option foreach
 
     }
+  }
+
+  def deleteSelected(): Unit = {
+    // note: this is only for the delete button.  The image panel handles delete key presses on its own
+    if(! ui.mainImage.plateModel.deleteSelection()){
+      ui.messageLabel.text = "No Plate Selected"
+    }
+  }
+
+  /**
+    * update the status label with helpful info about whatever the mouse is moving over in the image panel
+    * @param mouseSrcPixel source point
+    * @param color color of source pixel under mouse
+    */
+  def mouseOverStatus(mouseSrcPixel: Point, color: BrickColor2): Unit = {
+    val pointingAt = s"(${mouseSrcPixel.x}, ${mouseSrcPixel.y})"
+    val pointMessage = ui.mainImage.currentFirstClick match {
+      case Some(p: Point) => {
+        val w = Math.abs(mouseSrcPixel.x - p.x) + 1
+        val h = Math.abs(mouseSrcPixel.y - p.y) + 1
+        s"${pointingAt} Plate size: ${w}, ${h}"
+      }
+      case _ => pointingAt
+    }
+    val colorMessage = color.name match {
+      case "" => color.color().toString
+      case s => s
+    }
+
+    //ui.plateSizeLabel.text = s"${pointMessage} - ${colorMessage}"
+    ui.plateSizeLabel.text = pointMessage
+    ui.mouseOverColorLabel.text = colorMessage
   }
 
 }

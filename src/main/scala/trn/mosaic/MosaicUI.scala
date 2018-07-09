@@ -79,6 +79,7 @@ class MosaicUI extends MainFrame {
 
   northBar.contents += zoomInBtn
   northBar.contents += MosaicUI.makeButton("-", { case ButtonClicked(_) => zoomOut() })
+  northBar.contents += MosaicUI.makeButton("Delete", { case ButtonClicked(_) => controller.deleteSelected() })
 
 
   val mainImage = new ImagePanelX()
@@ -89,7 +90,7 @@ class MosaicUI extends MainFrame {
 
   mainImage.setOnClickListener(new PixelListener {
     override def onClick(p: Point): Unit = {
-      println(s"pixel clicked: ${p.x}, ${p.y}")
+      //println(s"pixel clicked: ${p.x}, ${p.y}")
     }
   })
   mainImage.setPlateAddedListener(new PlateAddedListener {
@@ -97,16 +98,19 @@ class MosaicUI extends MainFrame {
       println("plate added! " + p.toString)
     }
   })
+
+  /*
   mainImage.setMouseMovedListener(new MouseMovedPixelListener {
-    override def onMouseMoved(p: Point): Unit = {
+    override def onMouseMoved(p: Point, color: BrickColor2): Unit = {
       updateSizeEstimate(p)
     }
-  })
+  })*/
+
+  mainImage.setMouseMovedListener(controller.mouseOverStatus)
 
   val scrollpane = new ScrollPane(mainImageLayout)
   scrollpane.horizontalScrollBarPolicy = ScrollPane.BarPolicy.Always
   scrollpane.verticalScrollBarPolicy = ScrollPane.BarPolicy.Always
-
   scrollpane.preferredSize = new Dimension(100, 100)
 
 
@@ -124,10 +128,25 @@ class MosaicUI extends MainFrame {
   southBar.contents += button
   southBar.contents += Swing.HStrut(20)
 
+
+  val messageLabel = new Label { text = "" }
+  southBar.contents += messageLabel
+
+
+  southBar.contents += Swing.HGlue
+
   val plateSizeLabel = new Label {
     text = ""
   }
   southBar.contents += plateSizeLabel
+  southBar.contents += Swing.HStrut(40)
+  val mouseOverColorLabel = new Label {
+    text = ""
+    minimumSize = new Dimension(160, 0)
+    preferredSize = minimumSize
+  }
+  southBar.contents += mouseOverColorLabel
+
 
   val border = new BorderPanel {
     add(northBar, BorderPanel.Position.North)
@@ -154,6 +173,7 @@ class MosaicUI extends MainFrame {
     mainImage.zoomOut()
   }
 
+  /*
   def updateSizeEstimate(mouseSrcPixel: Point): Unit = {
     val pointingAt = s"(${mouseSrcPixel.x}, ${mouseSrcPixel.y})"
     plateSizeLabel.text = mainImage.currentFirstClick match {
@@ -164,6 +184,6 @@ class MosaicUI extends MainFrame {
       }
       case _ => pointingAt
     }
-  }
+  } */
 
 }

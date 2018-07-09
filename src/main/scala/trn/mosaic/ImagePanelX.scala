@@ -3,8 +3,13 @@ package trn.mosaic
 import java.awt.Color
 import java.awt.image.BufferedImage
 
-import scala.swing.event.{MouseClicked, MouseMoved}
+import javax.swing.SwingUtilities
+
+import scala.swing.event.{Key, KeyReleased, MouseClicked, MouseMoved}
 import scala.swing.{Dimension, Graphics2D, Panel, Point}
+
+
+
 
 object ImagePanelX {
   val MIN_ZOOM: Int = 8
@@ -28,10 +33,10 @@ trait PixelListener {
 }
 
 trait MouseMovedPixelListener {
-  def onMouseMoved(p: Point)
+  def onMouseMoved(p: Point, color: BrickColor2)
 }
 
-trait PlateAddedListener {
+trait PlateAddedListener { // TODO: get rid of this
   def onPlateAdded(p: Plate)
 }
 
@@ -41,6 +46,7 @@ trait PlateAddedListener {
   * This is not a generic image view though, has zoom, grid and coordinate translation built in.
   */
 class ImagePanelX() extends Panel {
+
 
   // TODO:  the value type should not be an option, what was i thinking??
   var scaledImages: Map[Int, Option[BufferedImage]] = Map[Int, Option[BufferedImage]]()
@@ -53,22 +59,23 @@ class ImagePanelX() extends Panel {
 
   var mouseMovedListener: Option[MouseMovedPixelListener] = None
 
+
   var plateAddedListener: Option[PlateAddedListener] = None
+
+  var srcPixelUnderMouse: Option[(Point, BrickColor2)] = None
 
   /**
     * location of the first corner a user clicks, in source coordinate space
     */
   var currentFirstClick: Option[Point] = None
 
-  //TODO: make private ...?
-  var plates: Seq[Plate] = Seq()  // TODO: do all this more intelligently?
-    // TODO:  track if modified since save
-
-
+  var plateModel: PlateListModel = new PlateListModel()
+  plateModel.addListener(new PlateListModel.ChangedListener {
+    override def onPlatesChanged(added: Option[Seq[Plate]], removed: Option[Seq[Plate]]): Unit = refresh()
+  })
 
   def setPlates(p: Seq[Plate]): Unit = {
-    plates = p
-    refresh()
+    plateModel.setPlates(p)
   }
 
   def setParent(p: Panel): Unit ={
@@ -144,11 +151,13 @@ class ImagePanelX() extends Panel {
   override def maximumSize = minimumSize
   override def preferredSize = minimumSize
 
-
   this.listenTo(mouse.clicks)
   this.listenTo(mouse.moves)
+  this.listenTo(keys)
   this.reactions += {
     case evt @ MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
+      //peer.setRequestFocusEnabled(true) // trying to get key events
+      this.requestFocus() // to get key events (dont seem to need 'focusable = true')
       val xy: Option[Point] = getSourcePixel(point.x, point.y)
       xy.foreach { p =>
         onClickListener.map(_.onClick(p))
@@ -156,16 +165,7 @@ class ImagePanelX() extends Panel {
         //println(s"button is ${evt.peer.getButton}")
         if(javax.swing.SwingUtilities.isLeftMouseButton(evt.peer)){
           // LEFT
-          if(this.currentFirstClick.isDefined) {
-            val plate = Plate(this.currentFirstClick.get, p, getSourcePixelRgb(p).get)
-            this.plateAddedListener.foreach(_.onPlateAdded(plate))
-            this.plates = this.plates :+ plate
-            this.currentFirstClick = None
-            this.repaint()
-          }else{
-            this.currentFirstClick = Some(p)
-            this.repaint()  // TODO: repaint only the rect that matters
-          }
+          onLeftClick(p)
 
         } else if(javax.swing.SwingUtilities.isRightMouseButton(evt.peer)) {
           // RIGHT
@@ -180,8 +180,62 @@ class ImagePanelX() extends Panel {
     }
     case MouseMoved(source, point, modifiers) => {
       val xy: Option[Point] = getSourcePixel(point.x, point.y)
-      xy.foreach{ p => mouseMovedListener.map( _.onMouseMoved(p) ) }
+      //xy.foreach{ p => mouseMovedListener.map( _.onMouseMoved(p) ) }
+
       // TODO:  add a feature that highlights the row and column the mouse is moving over!
+      // TODO:  or maybe just the pixel it is moving over ... (really need partial rendering though)
+      xy.foreach { newPixel =>
+        val changed = srcPixelUnderMouse match {
+          case Some(oldPixel) => newPixel != oldPixel._1
+          case None => true
+        }
+        if(changed){
+          srcPixelUnderMouse = Some((newPixel, this.getSourcePixelColor(newPixel).get))
+          fireMouseMoved(srcPixelUnderMouse.get._1, srcPixelUnderMouse.get._2)
+        }
+
+      }
+    }
+    case KeyReleased(source, key, modifiers, location) => {
+      println("KEY EVENT")
+      if(key == Key.BackSpace || key == Key.Delete){
+        plateModel.deleteSelection()
+      }
+
+    }
+  }
+
+  private def fireMouseMoved(p: Point, color: BrickColor2): Unit = {
+    mouseMovedListener.foreach { listener =>
+      SwingUtilities.invokeLater(() => listener.onMouseMoved(p, color))
+    }
+  }
+
+  private def onLeftClick(p: Point): Unit = {
+    if(plateModel.trySelectPlate(p).isDefined){
+      // SELECTED PLATE
+      currentFirstClick = None
+      this.repaint() // TODO: need to only repaint part of it
+    }else{
+      if(plateModel.selectedPlate.isDefined){
+        // CLEAR SELECTION
+        plateModel.clearSelection()
+        repaintAsync()
+
+      }else if(! this.currentFirstClick.isDefined) {
+        // FIRST CLICK
+        this.currentFirstClick = Some(p)
+        this.plateModel.clearSelection()
+        this.repaint()  // TODO: repaint only the rect that matters
+      }else{
+        // SECOND CLICK
+        val plate = Plate(this.currentFirstClick.get, p, getSourcePixelRgb(p).get)
+        this.plateAddedListener.foreach(_.onPlateAdded(plate))
+        this.plateModel.addPlate(plate, fireChanged = false)
+        //this.plates = this.plates :+ plate
+        this.currentFirstClick = None
+        this.repaint()
+      }
     }
   }
 
@@ -206,6 +260,10 @@ class ImagePanelX() extends Panel {
   private def getSourcePixelRgb(src: Point): Option[Int] ={
     val img = scaledImages.getOrElse(ImagePanelX.ORIGINAL_IMAGE, None)
     img.map( _.getRGB(src.x, src.y))
+  }
+
+  private def getSourcePixelColor(src: Point): Option[BrickColor2] = {
+    getSourcePixelRgb(src).map(BrickColor2(_))
   }
 
   def refresh(): Unit = {
@@ -240,6 +298,13 @@ class ImagePanelX() extends Panel {
   }
 
 
+  /**
+    * schedule a repaint on the UI thread without blocking the current execution
+    */
+  private def repaintAsync(): Unit = {
+    SwingUtilities.invokeLater(() => repaint())
+  }
+
   override def paint(g: Graphics2D): Unit = {
     //scala graphics2d is just a typedef to java.awt.graphics2d
     super.paint(g)
@@ -247,19 +312,24 @@ class ImagePanelX() extends Panel {
     val img = scaledImages.getOrElse(zoomLevel, None)
 
     img match {
-      case Some(i) => {
-        //display normally:
+      case Some(i) => { //image loaded
+        // IMAGE
         g.drawImage(i, 0, 0, null)
 
-        //and then the plates:
+        // PLATES
         this.drawPlates(g)
 
-        //and then the target rect
+        // SELECTED PLATE
+        plateModel.selectedPlate.foreach { selected =>
+          drawPlate(g, selected, true)
+        }
+
+        // TARGET RECT
         this.currentFirstClick.foreach{ p =>
           drawTarget(g, p)
         }
       }
-      case _ => {
+      case _ => {  // no image loaded
         g.setColor(new Color(50, 50, 50))
         g.fillRect(0, 0, this.bounds.width, this.bounds.height)
       }
@@ -268,34 +338,41 @@ class ImagePanelX() extends Panel {
     //
   }
 
-  private def drawPlates(g: Graphics2D): Unit = {
+
+  private def drawPlate(g: Graphics2D, p: Plate, selected: Boolean = false): Unit = {
     val s = zoomLevel
-    this.plates.foreach { p =>
+    if(p.isCorner){
+      // TODO
+    } else {
+      val x1 = p.x * s
+      val y1 = p.y * s
+      val w = p.w * s
+      val h = p.h * s
 
-      if(p.isCorner){
-        // TODO
-      } else {
-        val x1 = p.x * s
-        val y1 = p.y * s
-        val w = p.w * s
-        val h = p.h * s
-        g.setColor(Color.white)
-        g.drawRect(x1, y1, w, h)
-
-        val innerColor: Color = new Color(100, 0, 50)
-        g.setColor(innerColor)
-        g.drawRect(x1 + 1, y1 + 1, w - 2, h - 2)
-
-        g.setColor(new Color(127, 127, 127, 50))
-        g.fillRect(x1 + 2, y1 + 2, w - 4, h - 4)
-
-        //diagonal line
-        g.setColor(new Color(innerColor.getRed, innerColor.getGreen, innerColor.getBlue, 100))
-        g.drawLine(x1 + 2, y1 + 2, x1 + 2 + w - 4, y1 + 2 + h - 4)
-
+      val (outerColor, innerColor) = selected match {
+        case true => (Color.YELLOW, Color.ORANGE)
+        case false => (Color.white, new Color(100, 0, 50))
       }
-    }
 
+      //g.setColor(Color.white)
+      g.setColor(outerColor)
+      g.drawRect(x1, y1, w, h)
+
+      //val innerColor: Color = new Color(100, 0, 50)
+      g.setColor(innerColor)
+      g.drawRect(x1 + 1, y1 + 1, w - 2, h - 2)
+
+      g.setColor(new Color(127, 127, 127, 50))
+      g.fillRect(x1 + 2, y1 + 2, w - 4, h - 4)
+
+      //diagonal line
+      g.setColor(new Color(innerColor.getRed, innerColor.getGreen, innerColor.getBlue, 100))
+      g.drawLine(x1 + 2, y1 + 2, x1 + 2 + w - 4, y1 + 2 + h - 4)
+    }
+  }
+
+  private def drawPlates(g: Graphics2D): Unit = {
+    this.plateModel.getPlates().foreach(drawPlate(g, _))
   }
 
   /**

@@ -86,4 +86,28 @@ class PlateSpec extends FlatSpec {
     val p: Plate = read[Plate](s)
   }
 
+  "test" should "contains" in {
+
+    def assertContains(p: Plate, points: Seq[(Int, Int)], contains:Boolean = true): Unit = {
+      for((x,y) <- points) {
+        assert(contains == p.contains(x,y))
+      }
+    }
+    def assertNotContains(p: Plate, points: Seq[(Int, Int)]): Unit = assertContains(p, points, false)
+
+    val p1 = Plate(0, 0, 2, 2, c1)
+    assertContains(p1, Seq((0,0), (0,1), (1,0), (1,1)))
+    assertNotContains(p1, Seq((-1,-1), (2,2), (2,1), (2,0), (0,2), (1,2)))
+
+    val p2 = Plate(6, 1, 2, 3, c1)
+    assertContains(p2, Seq((6,1), (6,2), (6,3), (7,1), (7,2), (7,3)))
+    assertNotContains(p2, Seq(
+      (5, 0), (6, 0), (7, 0), (8, 0),
+      (5, 1),                 (8, 1),
+      (5, 2),                 (8, 2),
+      (5, 3),                 (8, 3),
+      (5, 4), (6, 4), (7, 4), (8, 4)
+    ))
+  }
+
 }

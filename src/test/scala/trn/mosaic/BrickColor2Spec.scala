@@ -32,4 +32,17 @@ class BrickColor2Spec extends FlatSpec {
     assert(c == BrickColor2.Black)
   }
 
+  "test" should "fuzzymatching" in {
+
+    assert(!BrickColor2.White.closeEnough(251, 255, 255))
+    assert(BrickColor2.White.closeEnough(251, 255, 254))
+
+    assert(BrickColor2.White == BrickColor2(new Color(255, 255, 254)))
+    assert(BrickColor2.White == BrickColor2(new Color(255, 255, 254)))
+    assert(BrickColor2.White == BrickColor2(new Color(251, 255, 254)))
+    assert(BrickColor2.White == BrickColor2(new Color(255, 251, 254)))
+    assert(BrickColor2.White == BrickColor2(new Color(255, 255, 251)))
+    assert(BrickColor2.White != BrickColor2(new Color(251, 251, 251)))
+  }
+
 }

@@ -63,6 +63,10 @@ case class Plate(
     new Plate(-1, -1, Math.min(w,h), Math.max(w,h), color, -1, -1, isCorner)
   }
 
+  def contains(px: Int, py: Int): Boolean = {
+    return x <= px && y <= py && px < (x + w) && py < (y + h)
+  }
+
 }
 
 /*
