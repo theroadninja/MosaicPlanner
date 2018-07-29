@@ -101,6 +101,8 @@ class FileController {
 
     // see if the file exists
     val outfile = chooser.getSelectedFile
+    return confirmOverwrite(outfile)
+    /*
     if(outfile.exists()){
       val choice = Dialog.showConfirmation(null, s"${outfile.getName} exists.  Overwrite?", "Overwrite?")
       if(choice != Dialog.Result.Yes){
@@ -109,6 +111,28 @@ class FileController {
     }
 
     return Some(outfile)
+    */
+  }
 
+  def confirmOverwrite(outfile: File): Option[File] = {
+    if(outfile.exists()){
+      val choice = Dialog.showConfirmation(null, s"${outfile.getName} exists.  Overwrite?", "Overwrite?")
+      if(choice != Dialog.Result.Yes){
+        return None
+      }
+    }
+    return Some(outfile)
+  }
+
+  def showExportInstructionsDialog(): Option[File] = {
+    val chooser = getFileChooser("Export Instructions (multiple files)")
+    lastDirectory.foreach { f => chooser.setCurrentDirectory(new File(f)) }
+    chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
+    if(chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION){
+      return None
+    }
+
+    val outfile = chooser.getSelectedFile
+    return confirmOverwrite(outfile)
   }
 }

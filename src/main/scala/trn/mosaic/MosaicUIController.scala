@@ -56,6 +56,34 @@ class MosaicUIController(ui: MosaicUI) {
     }
   }
 
+  val exportInstructions: Action = new Action("Export Instructions"){
+    override def apply(): Unit = {
+      ui.mainImage.getSourceImageSize() match {
+        case None => _
+        case Some(size) => {
+          //
+          fileController.showOpenLayoutDialog() match {
+            case None => _
+            case Some(selectedFile) => {
+              val exporter = new InstructionExporter(size, ui.mainImage.plateModel)
+              exporter.export(selectedFile)
+            }
+          }
+
+
+        }
+      }
+      // TODO
+
+      //selectedFile.map(FileController.readfile(_)).foreach { _.foreach { json =>
+      //  // deserialize from json
+      //  //implicit val formats = Serialization.formats(NoTypeHints)
+      //  //val f: LayoutFile = read[LayoutFile](json)
+      //  //ui.mainImage.setPlates(f.plateList)
+      //}}
+    }
+  }
+
   def deleteSelected(): Unit = {
     // note: this is only for the delete button.  The image panel handles delete key presses on its own
     if(! ui.mainImage.plateModel.deleteSelection()){

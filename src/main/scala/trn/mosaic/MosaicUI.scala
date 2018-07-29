@@ -22,12 +22,12 @@ object MosaicUI {
     override def apply(): Unit = { System.exit(0) }
   }
 
-  val exportInstructionsAction = new Action("Export Instructions"){
-    override def apply(): Unit = {
-      // save dialog, write instructions to PNG files in sections of 32
-      // TODO
-    }
-  }
+  // val exportInstructionsAction = new Action("Export Instructions"){
+  //   override def apply(): Unit = {
+  //     // save dialog, write instructions to PNG files in sections of 32
+  //     // TODO
+  //   }
+  // }
 
   def makeButton(label: String, listener: PartialFunction[Event, Unit]): Button = {
     val button = new Button {
@@ -60,7 +60,7 @@ class MosaicUI extends MainFrame {
       })
       contents += new MenuItem(controller.openPieceLayout)
       contents += new MenuItem(controller.savePieceLayout)
-      contents += new MenuItem(MosaicUI.exportInstructionsAction)
+      contents += new MenuItem(controller.exportInstructions)
       contents += new MenuItem(MosaicUI.quitAction)
 
 

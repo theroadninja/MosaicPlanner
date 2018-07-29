@@ -50,6 +50,7 @@ class ImagePanelX() extends Panel {
 
   // TODO:  the value type should not be an option, what was i thinking??
   var scaledImages: Map[Int, Option[BufferedImage]] = Map[Int, Option[BufferedImage]]()
+  var sourceImageSize: Option[Dimension] = None
 
   var zoomLevel: Int = ImagePanelX.MIN_ZOOM
 
@@ -102,6 +103,7 @@ class ImagePanelX() extends Panel {
     img match {
       case Some(i) => {
         var m: Map[Int, Option[BufferedImage]] = Map[Int, Option[BufferedImage]](ImagePanelX.ORIGINAL_IMAGE -> Some(i))
+        sourceImageSize = Some(new Dimension(i.getWidth, i.getHeight))
         for(size: Int <- ImagePanelX.MIN_ZOOM to ImagePanelX.MAX_ZOOM){
           val scaledImg = new BufferedImage(i.getWidth * size, i.getHeight * size, BufferedImage.TYPE_INT_ARGB)
           val g = scaledImg.getGraphics
@@ -117,6 +119,7 @@ class ImagePanelX() extends Panel {
       }
       case _ => {
         scaledImages = Map[Int, Option[BufferedImage]]()
+        sourceImageSize = None
       }
     }
     this.refresh()
@@ -251,6 +254,13 @@ class ImagePanelX() extends Panel {
       case Some(_) => { Some(new Point(x / zoomLevel, y / zoomLevel))}
       case _ => None
     }
+  }
+
+  /**
+    * @return the size of the image in source coordinates
+    */
+  def getSourceImageSize(): Option[Dimension] = {
+    sourceImageSize
   }
 
   /**
