@@ -57,6 +57,24 @@ case class Plate(
   }
 
   /**
+    * @return all corner points
+    */
+  def allPoints(): Seq[Point] = {
+    val x2 = x + w - 1
+    val y2 = y + h - 1
+    Seq(
+      new Point(x,y),
+      new Point(x,y2),
+      new Point(x2,y),
+      new Point(x2,y2)
+    )
+  }
+
+  def allStuds(): Seq[Point] = {
+    for (xx <- x until x + w; yy <- y until y + h) yield { new Point(xx,yy) }
+  }
+
+  /**
     * @return plate with position and rotation info removed (and w,h sorted)
     */
   def asPrefab(): Plate = {

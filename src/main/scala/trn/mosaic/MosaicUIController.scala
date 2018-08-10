@@ -59,11 +59,12 @@ class MosaicUIController(ui: MosaicUI) {
   val exportInstructions: Action = new Action("Export Instructions"){
     override def apply(): Unit = {
       ui.mainImage.getSourceImageSize() match {
-        case None => _
+        case None => Unit
         case Some(size) => {
           //
-          fileController.showOpenLayoutDialog() match {
-            case None => _
+          fileController.showExportInstructionsDialog() match {
+          //fileController.showOpenLayoutDialog() match {
+            case None => Unit
             case Some(selectedFile) => {
               val exporter = new InstructionExporter(size, ui.mainImage.plateModel)
               exporter.export(selectedFile)
